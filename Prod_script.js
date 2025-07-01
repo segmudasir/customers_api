@@ -1,9 +1,9 @@
-// Prod_script.js
 
-// This function fetches products from your API and displays them
+const server = 'https://customers-api-bjx4.onrender.com'; // Change this to your render.com URL 
+
 async function loadProducts() {
   try {
-    const response = await fetch('http://localhost:5000/products');
+    const response = await fetch(`${server}/products`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const products = await response.json();
@@ -20,8 +20,8 @@ async function loadProducts() {
       const card = document.createElement('div');
       card.className = 'product-card';
 
-      // Construct full URL for image to load from backend server
-      const imgUrl = `http://localhost:5000${product.ImagePath}`;
+      // Construct full URL for image using the server constant
+      const imgUrl = `${server}${product.ImagePath}`;
 
       card.innerHTML = `
         <img src="${imgUrl}" alt="${product.ProductName}" />
