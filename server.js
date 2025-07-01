@@ -1,12 +1,16 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
-
+const path = require('path'); // for images of Orders
 const app = express();
 const port = 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve images folder statically
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 
 // Change the path here to your actual DB file
 const db = new sqlite3.Database('./SQL_Customer.db', (err) => {
@@ -73,7 +77,7 @@ app.get('/customers', (req, res) => {
     res.json(rows);
   });
 });
-// =================== POST Add Customer =================== //
+// =================== Add Customer =================== //
 app.post('/customers/add', (req, res) => {
   const { CustomerID, CustomerName, Gender, Age, Address, City, PostalCode, Country } = req.body;
 
@@ -109,7 +113,7 @@ app.post('/customers/add', (req, res) => {
   });
 });
 
-// =================== POST Add Order =================== //
+// =================== Add Order =================== //
 app.post('/orders/add', (req, res) => {
   const { OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount } = req.body;
 
@@ -142,9 +146,119 @@ app.post('/orders/add', (req, res) => {
   });
 });
 
+// =================== Add Product =================== //
+app.post('/products/add', (req, res) => {
+  const { ProductID, ProductName, Price, ImagePath } = req.body;
+
+  if (!ProductID || !ProductName || Price == null) {
+    return res.status(400).json({ error: "ProductID, ProductName, and Price are required" });
+  }
+
+  db.get('SELECT * FROM Products WHERE ProductID = ?', [ProductID], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (row) {
+      return res.status(400).json({ Message: `Failed - Product with ID ${ProductID} already exists.` });
+    }
+
+    const sql = `INSERT INTO Products (ProductID, ProductName, Price, ImagePath) VALUES (?, ?, ?, ?)`;
+    db.run(sql, [ProductID, ProductName, Price, ImagePath], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.json({
+        Message: "Product added successfully",
+        ProductID: ProductID
+      });
+    });
+  });
+});
+
+// =================== Get Products =================== //
+app.get('/products', (req, res) => {
+  let query = 'SELECT * FROM Products WHERE 1=1';
+  const params = [];
+
+  if (req.query.ProductID) {
+    query += ' AND ProductID = ?';
+    params.push(req.query.ProductID);
+  }
+
+  if (req.query.ProductName) {
+    query += ' AND ProductName = ?';
+    params.push(req.query.ProductName);
+  }
+
+  query += ' ORDER BY ProductID ASC';
+
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (req.query.ProductID && rows.length === 0) {
+      return res.status(404).json({ error: `Product with ID ${req.query.ProductID} not found` });
+    }
+
+    res.json(rows);
+  });
+});
+
+// =================== Update Products =================== //
+app.put('/products/update', (req, res) => {
+  const { ProductID, ...fieldsToUpdate } = req.body;
+
+  if (!ProductID) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
+
+  const keys = Object.keys(fieldsToUpdate);
+  if (keys.length === 0) {
+    return res.status(400).json({ error: "No update fields provided" });
+  }
+
+  db.get('SELECT * FROM Products WHERE ProductID = ?', [ProductID], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+
+    const setClause = keys.map(field => `${field} = ?`).join(', ');
+    const values = keys.map(field => fieldsToUpdate[field]);
+    values.push(ProductID);
+
+    const sql = `UPDATE Products SET ${setClause} WHERE ProductID = ?`;
+
+    db.run(sql, values, function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.json({
+        message: "Product updated successfully",
+        ...fieldsToUpdate
+      });
+    });
+  });
+});
+
+// =================== Delete Product =================== //
+app.delete('/products/delete', (req, res) => {
+  const { ProductID } = req.body;
+
+  if (!ProductID) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
+
+  db.run('DELETE FROM Products WHERE ProductID = ?', [ProductID], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+    }
+
+    res.json({
+      message: "Product deleted successfully",
+      ProductID: ProductID
+    });
+  });
+});
 
 
-// =================== PUT Update Order =================== //
+// =================== Update Order =================== //
 app.put('/orders/update', (req, res) => {
   const { OrderID, ...fieldsToUpdate } = req.body;
 
