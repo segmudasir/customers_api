@@ -115,19 +115,23 @@ app.post('/customers/add', (req, res) => {
 
 // =================== Add Order =================== //
 app.post('/orders/add', (req, res) => {
-  const { OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount } = req.body;
+  const { CustomerName, Product, Price, Quantity, OrderDate } = req.body;
 
-  if (!OrderID || !CustomerName || !Product || Price == null || Quantity == null || !OrderDate || TotalAmount == null) {
-    return res.status(400).json({ error: "All fields are required" });
+  // Validate required fields
+  if (!CustomerName || !Product || Price == null || Quantity == null || !OrderDate) {
+    return res.status(400).json({ error: "All fields are required except OrderID and TotalAmount" });
   }
 
-  db.get('SELECT * FROM orders WHERE OrderID = ?', [OrderID], (err, row) => {
+  // Calculate TotalAmount
+  const TotalAmount = parseFloat((Price * Quantity).toFixed(2));
+
+  // Get latest OrderID and increment
+  db.get('SELECT MAX(OrderID) AS maxID FROM orders', (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    if (row) {
-      return res.status(400).json({
-        Message: `Failed - Order with ID ${OrderID} already exists.`
-      });
+    let newOrderID = 1001;
+    if (row && row.maxID) {
+      newOrderID = row.maxID + 1;
     }
 
     const sql = `
@@ -135,12 +139,13 @@ app.post('/orders/add', (req, res) => {
       VALUES(?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.run(sql, [OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
+    db.run(sql, [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
       res.json({
-        Message: "Order added Successfully",
-        OrderID: OrderID
+        Message: "Order added successfully",
+        OrderID: newOrderID,
+        TotalAmount
       });
     });
   });
