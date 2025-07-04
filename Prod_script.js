@@ -1,5 +1,5 @@
 
-const server = 'https://customers-api-bjx4.onrender.com'; // Change this to your render.com URL 
+const server = 'https://customers-ecom-api.onrender.com'; // Change this to your render.com URL 
 //const server = 'http://localhost:5000'; // Change this to your render.com URL 
 
 async function loadProducts() {
