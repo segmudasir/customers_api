@@ -105,7 +105,7 @@ app.post('/customers/add', (req, res) => {
     db.run(sql, [CustomerID, CustomerName, Gender, Age, Address, City, PostalCode, Country], function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      res.json({
+      res.status(201).json({
         Message: "Customer added successfully",
         CustomerID: CustomerID
       });
@@ -142,7 +142,7 @@ app.post('/orders/add', (req, res) => {
     db.run(sql, [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      res.json({
+      res.status(201).json({
         Message: "Order added successfully",
         OrderID: newOrderID,
         TotalAmount
@@ -170,7 +170,7 @@ app.post('/products/add', (req, res) => {
     db.run(sql, [ProductID, ProductName, Price, ImagePath], function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      res.json({
+      res.status(201).json({
         Message: "Product added successfully",
         ProductID: ProductID
       });

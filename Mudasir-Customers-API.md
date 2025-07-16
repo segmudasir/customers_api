@@ -1,39 +1,123 @@
-# Valentine's Book List API
+# Mudasir Customers API
 
-This API allows you to view the books that Valentine has read or plans to read.
+This API allows you to get Orders, Products, Customers.
 
-The API is available at `https://valentines-book-list.glitch.me`
+Base URL = https://customers-ecom-api.onrender.com
 
 ## Endpoints
 
-- [Status](#Status)
-- [Books](#Books)
-  - [Get a book list](#Get-a-book-list)
+- [Customers](#Customers)
+- [Products](#Products)
 
 
-## Status
+## Customers
 
-**`GET /status`**
+**`/customers/add`**
 
-Returns the status of the API. Example response:
+**Method:** POST
+In this Method - also called Create Request - Something adding or posting on Server.
 
+Example Body:
 ```
 {
-    "status": "UP"
+  "CustomerID": 92,
+  "CustomerName": "Maria Anders",
+  "Gender": "Female",
+  "Age": 35,
+  "Address": "Obere Str. 57",
+  "City": "Berlin",
+  "PostalCode": "12209",
+  "Country": "Germany"
 }
 ```
 
-Status `UP` indicates that the API is running as expected.
+**Status codes**
 
-No response or any other response indicates that the API is not functioning correctly.
+| Status code | Description |
+|-----------------|-----------------------------------------------------|
+| 201 Created          | Indicates that request has been submitted successfully.                    |
+| 400 Not Found   | If specific ID or CustomerName does not exists record will be not found. |
 
-## Books
 
-### Get a book list
+Example response:
 
-**`GET /books/lists`**
+```
+[
+    {
+        "CustomerID": 1,
+        "CustomerName": "Maria Anders",
+        "Gender": "Female",
+        "Age": 31,
+        "Address": "Obere Str. 57",
+        "City": "Berlin",
+        "PostalCode": "12209",
+        "Country": "Germany"
+    },
+    {
+        "CustomerID": 2,
+        "CustomerName": "Ana Trujillo",
+        "Gender": "Female",
+        "Age": 50,
+        "Address": "Avda. de la Constitución 2222",
+        "City": "México D.F.",
+        "PostalCode": "05021",
+        "Country": "Mexico"
+    }
+]
+```
+**`/customers`**
 
-Returns a list of books. Requires authentication. 
+**Method:** 
+Returns the list of All Customers in JSON Format. 
+
+**Parameters**
+
+| Name        | Type    | Parameter    | Required | Description                                                                                                | 
+| ----------- | ------- | ----- | -------- | -----------------------------------------------------------------------------------------------------------| 
+| `CustomerID`| integer | query | Optional      | If you specify the CustomerID it will return only that Customer Record. If not Provided it will return all Customers records.  | 
+| `CustomerName`      | string  | query | Optional      | This is optional parameter. If you want to get specific Customer by providing CustomerName.                                         | 
+
+**Status codes**
+
+| Status code | Description |
+|-----------------|-----------------------------------------------------|
+| 200 OK          | Indicates a successful response.                    |
+| 400 Not Found   | If specific ID or CustomerName does not exists record will be not found. |
+
+Example response:
+
+```
+[
+    {
+        "CustomerID": 1,
+        "CustomerName": "Maria Anders",
+        "Gender": "Female",
+        "Age": 31,
+        "Address": "Obere Str. 57",
+        "City": "Berlin",
+        "PostalCode": "12209",
+        "Country": "Germany"
+    },
+    {
+        "CustomerID": 2,
+        "CustomerName": "Ana Trujillo",
+        "Gender": "Female",
+        "Age": 50,
+        "Address": "Avda. de la Constitución 2222",
+        "City": "México D.F.",
+        "PostalCode": "05021",
+        "Country": "Mexico"
+    }
+]
+## Products
+
+### Get Products
+
+**`/products`**
+
+Method: GET
+Returns a list of Products.
+
 
 This endpoint uses pagination to handle the returned results. Paginating the results ensures responses are easier to handle. Each response will indicate the total number of results, the current page, and the total number of pages.
 
