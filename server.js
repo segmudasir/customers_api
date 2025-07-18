@@ -65,6 +65,21 @@ app.get('/customers', (req, res) => {
     params.push(req.query.CustomerName);
   }
 
+  if (req.query.City) {
+    query += ' AND City = ?';
+    params.push(req.query.City);
+  }
+
+  if (req.query.Gender) {
+    query += ' AND Gender = ?';
+    params.push(req.query.Gender);
+  }
+
+  if (req.query.Country) {
+    query += ' AND Country = ?';
+    params.push(req.query.Country);
+  }
+
   query += ' ORDER BY CustomerID ASC';
 
   db.all(query, params, (err, rows) => {
@@ -77,6 +92,7 @@ app.get('/customers', (req, res) => {
     res.json(rows);
   });
 });
+
 // =================== Add Customer =================== //
 app.post('/customers/add', (req, res) => {
   const { CustomerID, CustomerName, Gender, Age, Address, City, PostalCode, Country } = req.body;
