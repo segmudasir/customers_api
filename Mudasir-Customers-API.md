@@ -14,8 +14,8 @@ Base URL = https://customers-ecom-api.onrender.com
 
 **`/customers/add`**
 
-**Method:** POST
-In this Method - also called Create Request - Something adding or posting on Server.
+**Method:** POST  
+Also called CREATE Request - In this Method something is added or posted on the Server. Therefore usually we require a body.
 
 Example Body:
 ```
@@ -36,53 +36,38 @@ Example Body:
 | Status code | Description |
 |-----------------|-----------------------------------------------------|
 | 201 Created          | Indicates that request has been submitted successfully.                    |
-| 400 Not Found   | If specific ID or CustomerName does not exists record will be not found. |
+| 400 Bad Request  | If record with this CustomerID e.g 92 already exists. |
 
 
 Example response:
 
 ```
-[
-    {
-        "CustomerID": 1,
-        "CustomerName": "Maria Anders",
-        "Gender": "Female",
-        "Age": 31,
-        "Address": "Obere Str. 57",
-        "City": "Berlin",
-        "PostalCode": "12209",
-        "Country": "Germany"
-    },
-    {
-        "CustomerID": 2,
-        "CustomerName": "Ana Trujillo",
-        "Gender": "Female",
-        "Age": 50,
-        "Address": "Avda. de la Constitución 2222",
-        "City": "México D.F.",
-        "PostalCode": "05021",
-        "Country": "Mexico"
-    }
-]
+{
+    "Message": "Customer added successfully",
+    "CustomerID": 92
+}
 ```
 **`/customers`**
 
-**Method:** 
-Returns the list of All Customers in JSON Format. 
+**Method:** GET  
+Also called Retrieve Request - Returns the list of all Customers from Server.
 
 **Parameters**
 
 | Name        | Type    | Parameter    | Required | Description                                                                                                | 
 | ----------- | ------- | ----- | -------- | -----------------------------------------------------------------------------------------------------------| 
-| `CustomerID`| integer | query | Optional      | If you specify the CustomerID it will return only that Customer Record. If not Provided it will return all Customers records.  | 
-| `CustomerName`      | string  | query | Optional      | This is optional parameter. If you want to get specific Customer by providing CustomerName.                                         | 
+| `CustomerID`| integer | Query | Optional      | If you specify the CustomerID it will return only that Customer Record. If not Provided it will return all Customers records.  | 
+| `CustomerName`      | string  | Query | Optional      | This is optional parameter. If you want to get specific Customer by providing CustomerName.                                         | 
+| `Country`      | string  | Query | Optional      | It can be one of the following: Argentina, Austria, Belgium, Brazil, Canada, Denmark, Finland, France, Germany, Ireland, Italy, Mexico, Norway, Poland, Portugal, Spain, Sweden, Switzerland, UK, USA, Venezuela.                                         | 
+| `City`      | string  | Query | Optional      | It can be one of the following: Aachen, Albuquerque, Anchorage, Barcelona, Barquisimeto, Bergamo, Berlin, Bern, Boise, Brandenburg, Bruxelles, Buenos Aires, Butte, Campinas, Caracas, Charleroi, Cork, Cowes, Cunewalde, Elgin, Eugene, Frankfurt a.M., Genève, Graz, Helsinki, I. de Margarita, Kirkland, Köln, København, Lander, Leipzig, Lille, Lisboa, London, Luleå, Lyon, Madrid, Mannheim, Marseille, México D.F., Montréal, München, Münster, Nantes, Oulu, Paris, Portland, Reggio Emilia, Reims, Resende, Rio de Janeiro, Salzgurg, San Cristóbal, San Francisco, São Paulo, Seattle, Sevilla, Stavern, Strasbourg, Stuttgart, Toulouse, Torino, Tsawassen, Vancouver, Versailles, Walla, Walla Walla, Århus.                                         | 
+| `Gender`      | string  | Query | Optional      | It can be Male or Female.                                         | 
 
 **Status codes**
 
 | Status code | Description |
 |-----------------|-----------------------------------------------------|
 | 200 OK          | Indicates a successful response.                    |
-| 400 Not Found   | If specific ID or CustomerName does not exists record will be not found. |
+| 404 Not Found   | If specific ID or CustomerName or Country or City does not exists you will get this error. |
 
 Example response:
 
@@ -109,6 +94,8 @@ Example response:
         "Country": "Mexico"
     }
 ]
+```
+
 ## Products
 
 ### Get Products

@@ -85,13 +85,15 @@ app.get('/customers', (req, res) => {
   db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    if (req.query.CustomerID && rows.length === 0) {
-      return res.status(404).json({ error: `Customer with ID ${req.query.CustomerID} not found` });
+    // Check for all filters individually
+    if ((req.query.CustomerID || req.query.CustomerName || req.query.City || req.query.Gender || req.query.Country) && rows.length === 0) {
+      return res.status(404).json({ error: `Customer not found` });
     }
 
     res.json(rows);
   });
 });
+
 
 // =================== Add Customer =================== //
 app.post('/customers/add', (req, res) => {
