@@ -413,6 +413,34 @@ app.post('/users', (req, res) => {
   );
 });
 
+// =================== Retrieve Access Token =================== //
+app.post('/accesstoken', (req, res) => {
+  const { Email } = req.body;
+
+  if (!Email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  db.get(
+    'SELECT AccessToken FROM Users WHERE Email = ?',
+    [Email],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (!row) {
+        return res.status(404).json({ error: "Email not registered" });
+      }
+
+      // Return the existing access token
+      res.status(200).json({
+        Email: Email,
+        accessToken: row.AccessToken
+      });
+    }
+  );
+});
+
+
 // =================== Add Products (Protected) =================== //
 app.post('/products/add', authenticateToken, (req, res) => {
   const { ProductID, ProductName, Price, ImagePath } = req.body;
