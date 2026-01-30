@@ -318,27 +318,7 @@ app.get('/products', (req, res) => {
 
 
 
-// =================== Delete Product =================== //
-app.delete('/products/delete', (req, res) => {
-  const { ProductID } = req.body;
 
-  if (!ProductID) {
-    return res.status(400).json({ error: "ProductID is required" });
-  }
-
-  db.run('DELETE FROM Products WHERE ProductID = ?', [ProductID], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (this.changes === 0) {
-      return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
-    }
-
-    res.json({
-      message: "Product deleted successfully",
-      ProductID: ProductID
-    });
-  });
-});
 
 
 
@@ -433,7 +413,7 @@ app.post('/users', (req, res) => {
   );
 });
 
-// =================== Update Products (Protected) =================== //
+// =================== Add Products (Protected) =================== //
 app.post('/products/add', authenticateToken, (req, res) => {
   const { ProductID, ProductName, Price, ImagePath } = req.body;
 
@@ -477,45 +457,88 @@ app.post('/products/add', authenticateToken, (req, res) => {
 app.put('/products/update', authenticateToken, (req, res) => {
   const { ProductID, ...fieldsToUpdate } = req.body;
 
-  // Validate required ProductID
   if (!ProductID) {
     return res.status(400).json({ error: "ProductID is required" });
   }
 
-  // Validate that at least one field is provided
   const keys = Object.keys(fieldsToUpdate);
   if (keys.length === 0) {
     return res.status(400).json({ error: "No update fields provided" });
   }
-
-  // Track who updated the product
-  fieldsToUpdate.UpdatedBy = req.user.Email;
-
-  // Prepare SET clause
-  const setClause = keys.concat(['UpdatedBy']).map(field => `${field} = ?`).join(', ');
-  const values = keys.map(field => fieldsToUpdate[field]);
-  values.push(req.user.Email); // UpdatedBy
-  values.push(ProductID);      // WHERE ProductID = ?
 
   // Check if product exists
   db.get('SELECT * FROM Products WHERE ProductID = ?', [ProductID], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
 
-    // Update the product
-    const sql = `UPDATE Products SET ${setClause} WHERE ProductID = ?`;
+    // Prepare SET clause and values
+    const setClause = [];
+    const values = [];
+
+    // Only include fields that are actually changing
+    keys.forEach(field => {
+      if (row[field] !== fieldsToUpdate[field]) {
+        setClause.push(`${field} = ?`);
+        values.push(fieldsToUpdate[field]);
+      }
+    });
+
+    if (setClause.length === 0) {
+      return res.json({
+        message: "No changes were made",
+        ProductID
+      });
+    }
+
+    values.push(ProductID);
+    const sql = `UPDATE Products SET ${setClause.join(', ')} WHERE ProductID = ?`;
+
     db.run(sql, values, function(err) {
       if (err) return res.status(500).json({ error: err.message });
+
+      // Build response object
+      const updatedResponse = {};
+      keys.forEach(field => {
+        if (row[field] !== fieldsToUpdate[field]) {
+          updatedResponse[field] = fieldsToUpdate[field];
+        }
+      });
 
       res.json({
         message: "Product updated successfully",
         ProductID,
-        UpdatedBy: req.user.Email,
-        UpdatedFields: fieldsToUpdate
+        "Following fields are updated": updatedResponse,
+        UpdatedBy: req.user.Email
       });
     });
   });
 });
+
+// =================== Delete Product (Protected) =================== //
+app.delete('/products/delete', authenticateToken, (req, res) => {
+  const { ProductID } = req.body;
+
+  if (!ProductID) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
+
+  const deletedBy = req.user.Email; // who is deleting
+
+  db.run('DELETE FROM Products WHERE ProductID = ?', [ProductID], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+    }
+
+    res.json({
+      message: "Product deleted successfully",
+      ProductID: ProductID,
+      DeletedBy: deletedBy
+    });
+  });
+});
+
 
 
 
