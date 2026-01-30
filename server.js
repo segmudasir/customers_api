@@ -441,7 +441,7 @@ app.post('/accesstoken', (req, res) => {
 });
 
 // =================== Delete Access Token =================== //
-app.delete('/accesstoken', (req, res) => {
+app.delete('/deletetoken', (req, res) => {
   const { Email } = req.body;
 
   // Validate input
