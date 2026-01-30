@@ -36,7 +36,7 @@ Example Body:
 | Status code | Description |
 |-----------------|-----------------------------------------------------|
 | 201 Created          | Indicates that request has been submitted successfully.                    |
-| 400 Bad Request  | If record with this CustomerID e.g., 92 already exists. |
+| 400 Bad Request  | If record with this CustomerID e.g., 92 already exists. Then following message should appear "Failed - Customer with ID 92 already exists". |
 
 
 Example response:
