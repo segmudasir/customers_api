@@ -160,132 +160,47 @@ app.delete('/customers/delete', (req, res) => {
 });
 
 
-// =================== Add Order =================== //
-app.post('/orders/add', (req, res) => {
-  const { CustomerName, Product, Price, Quantity, OrderDate } = req.body;
 
-  // Validate required fields
-  if (!CustomerName || !Product || Price == null || Quantity == null || !OrderDate) {
-    return res.status(400).json({ error: "All fields are required except OrderID and TotalAmount" });
+// =================== Add Products =================== //
+app.post('/products/add', (req, res) => {
+  const { ProductID, ProductName, Price, ImagePath } = req.body;
+
+  if (!ProductID || !ProductName || Price == null) {
+    return res.status(400).json({
+      error: "ProductID, ProductName, and Price are required"
+    });
   }
 
-  // Calculate TotalAmount
-  const TotalAmount = parseFloat((Price * Quantity).toFixed(2));
-
-  // Get latest OrderID and increment
-  db.get('SELECT MAX(OrderID) AS maxID FROM orders', (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    let newOrderID = 1001;
-    if (row && row.maxID) {
-      newOrderID = row.maxID + 1;
-    }
-
-    const sql = `
-      INSERT INTO orders(OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount)
-      VALUES(?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    db.run(sql, [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
+  db.get(
+    'SELECT * FROM Products WHERE ProductID = ?',
+    [ProductID],
+    (err, row) => {
       if (err) return res.status(500).json({ error: err.message });
 
-      res.status(201).json({
-        Message: "Order added successfully",
-        OrderID: newOrderID,
-        TotalAmount
+      if (row) {
+        return res.status(400).json({
+          Message: `Failed - Product with ID ${ProductID} already exists.`
+        });
+      }
+
+      const sql = `
+        INSERT INTO Products (ProductID, ProductName, Price, ImagePath)
+        VALUES (?, ?, ?, ?)
+      `;
+
+      db.run(sql, [ProductID, ProductName, Price, ImagePath], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+
+        res.status(201).json({
+          Message: "Product added successfully",
+          ProductID: ProductID,
+        });
       });
-    });
-  });
-});
-
-// =================== GET Orders =================== //
-app.get('/orders', (req, res) => {
-  let query = 'SELECT * FROM orders WHERE 1=1';
-  const params = [];
-
-  if (req.query.OrderID) {
-    query += ' AND OrderID = ?';
-    params.push(req.query.OrderID);
-  }
-
-  if (req.query.CustomerName) {
-    query += ' AND CustomerName = ?';
-    params.push(req.query.CustomerName);
-  }
-
-  query += ' ORDER BY OrderID ASC';
-
-  db.all(query, params, (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (req.query.OrderID && rows.length === 0) {
-      return res.status(404).json({ error: `Order with ID ${req.query.OrderID} not found` });
     }
-
-    res.json(rows);
-  });
+  );
 });
-
-// =================== Update Order =================== //
-app.put('/orders/update', (req, res) => {
-  const { OrderID, ...fieldsToUpdate } = req.body;
-
-  if (!OrderID) {
-    return res.status(400).json({ error: "OrderID is required" });
-  }
-
-  const keys = Object.keys(fieldsToUpdate);
-  if (keys.length === 0) {
-    return res.status(400).json({ error: "No update fields provided" });
-  }
-
-  db.get('SELECT * FROM orders WHERE OrderID = ?', [OrderID], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: `Order with ID ${OrderID} not found` });
-
-    const setClause = keys.map(field => `${field} = ?`).join(', ');
-    const values = keys.map(field => fieldsToUpdate[field]);
-    values.push(OrderID);
-
-    const sql = `UPDATE orders SET ${setClause} WHERE OrderID = ?`;
-
-    db.run(sql, values, function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-
-      res.json({
-        message: "Following properties of order updated successfully",
-        ...fieldsToUpdate
-      });
-    });
-  });
-});
-
-// =================== DELETE Order =================== //
-app.delete('/orders/delete', (req, res) => {
-  const { OrderID } = req.body;
-
-  if (!OrderID) {
-    return res.status(400).json({ error: "OrderID is required" });
-  }
-
-  db.run('DELETE FROM orders WHERE OrderID = ?', [OrderID], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (this.changes === 0) {
-      return res.status(404).json({ error: `Order with ID ${OrderID} not found` });
-    }
-
-    res.json({
-      message: "Order deleted successfully",
-      OrderID: OrderID
-    });
-  });
-});
-
-
 
 // =================== Get Products =================== //
-// all customers can see products - so security is removed here // so all three Products (Add, udpate and delte are protected)
 app.get('/products', (req, res) => {
   let query = 'SELECT * FROM Products WHERE 1=1';
   const params = [];
@@ -313,14 +228,79 @@ app.get('/products', (req, res) => {
   });
 });
 
+// =================== Update Products =================== //
+app.put('/products/update', (req, res) => {
+  const { ProductID, ...fieldsToUpdate } = req.body;
 
+  if (!ProductID) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
 
+  const keys = Object.keys(fieldsToUpdate);
+  if (keys.length === 0) {
+    return res.status(400).json({ error: "No update fields provided" });
+  }
 
+  // Check if product exists
+  db.get('SELECT * FROM Products WHERE ProductID = ?', [ProductID], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
 
+    // Prepare only fields that are actually changing
+    const setClause = [];
+    const values = [];
+    const updatedResponse = {};
 
+    keys.forEach(field => {
+      if (row[field] !== fieldsToUpdate[field]) {
+        setClause.push(`${field} = ?`);
+        values.push(fieldsToUpdate[field]);
+        updatedResponse[field] = fieldsToUpdate[field];
+      }
+    });
 
+    if (setClause.length === 0) {
+      return res.json({
+        message: "No changes were made",
+        ProductID
+      });
+    }
 
+    values.push(ProductID);
+    const sql = `UPDATE Products SET ${setClause.join(', ')} WHERE ProductID = ?`;
 
+    db.run(sql, values, function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.json({
+        message: "Product updated successfully and following properties were updated",
+        updatedResponse
+      });
+    });
+  });
+});
+
+// =================== Delete Product =================== //
+app.delete('/products/delete', (req, res) => {
+  const { ProductID } = req.body;
+
+  if (!ProductID) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
+ 
+  db.run('DELETE FROM Products WHERE ProductID = ?', [ProductID], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+    }
+
+    res.json({
+      message: "Product deleted successfully",
+      ProductID: ProductID
+    });
+  });
+});
 
 
 
@@ -480,70 +460,101 @@ app.delete('/deletetoken', (req, res) => {
 });
 
 
+// =================== Add Order (Protected) =================== //
+app.post('/orders/add', authenticateToken, (req, res) => {
+  const { CustomerName, Product, Price, Quantity, OrderDate } = req.body;
 
-// =================== Add Products (Protected) =================== //
-app.post('/products/add', authenticateToken, (req, res) => {
-  const { ProductID, ProductName, Price, ImagePath } = req.body;
-
-  if (!ProductID || !ProductName || Price == null) {
-    return res.status(400).json({
-      error: "ProductID, ProductName, and Price are required"
-    });
+  // Validate required fields
+  if (!CustomerName || !Product || Price == null || Quantity == null || !OrderDate) {
+    return res.status(400).json({ error: "All fields are required except OrderID and TotalAmount" });
   }
 
-  db.get(
-    'SELECT * FROM Products WHERE ProductID = ?',
-    [ProductID],
-    (err, row) => {
+  // Calculate TotalAmount
+  const TotalAmount = parseFloat((Price * Quantity).toFixed(2));
+
+  // Get latest OrderID and increment
+  db.get('SELECT MAX(OrderID) AS maxID FROM orders', (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    let newOrderID = 1001;
+    if (row && row.maxID) {
+      newOrderID = row.maxID + 1;
+    }
+
+    const sql = `
+      INSERT INTO orders(OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount)
+      VALUES(?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(sql, [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      if (row) {
-        return res.status(400).json({
-          Message: `Failed - Product with ID ${ProductID} already exists.`
-        });
-      }
-
-      const sql = `
-        INSERT INTO Products (ProductID, ProductName, Price, ImagePath)
-        VALUES (?, ?, ?, ?)
-      `;
-
-      db.run(sql, [ProductID, ProductName, Price, ImagePath], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-
-        res.status(201).json({
-          Message: "Product added successfully",
-          ProductID: ProductID,
-          AddedBy: req.user.Email   // optional audit info
-        });
+      res.status(201).json({
+        Message: "Order added successfully",
+        OrderID: newOrderID,
+        TotalAmount,
+        AddedBy: req.user.Email // optional audit info from token
       });
-    }
-  );
+    });
+  });
 });
 
-// =================== Update Products (Protected) =================== //
-app.put('/products/update', authenticateToken, (req, res) => {
-  const { ProductID, ...fieldsToUpdate } = req.body;
+// =================== GET Orders (Protected) =================== //
+app.get('/orders', authenticateToken, (req, res) => {
+  let query = 'SELECT * FROM orders WHERE 1=1';
+  const params = [];
 
-  if (!ProductID) {
-    return res.status(400).json({ error: "ProductID is required" });
+  if (req.query.OrderID) {
+    query += ' AND OrderID = ?';
+    params.push(req.query.OrderID);
   }
 
+  if (req.query.CustomerName) {
+    query += ' AND CustomerName = ?';
+    params.push(req.query.CustomerName);
+  }
+
+  query += ' ORDER BY OrderID ASC';
+
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if ((req.query.OrderID || req.query.CustomerName) && rows.length === 0) {
+      return res.status(404).json({ error: `Order not found` });
+    }
+
+    // Optional: include which user requested
+    res.json({
+      RequestedBy: req.user.Email,
+      Orders: rows
+    });
+  });
+});
+
+// =================== Update Order (Protected) =================== //
+app.put('/orders/update', authenticateToken, (req, res) => {
+  const { OrderID, ...fieldsToUpdate } = req.body;
+
+  // Validate required OrderID
+  if (!OrderID) {
+    return res.status(400).json({ error: "OrderID is required" });
+  }
+
+  // Validate that at least one field is provided
   const keys = Object.keys(fieldsToUpdate);
   if (keys.length === 0) {
     return res.status(400).json({ error: "No update fields provided" });
   }
 
-  // Check if product exists
-  db.get('SELECT * FROM Products WHERE ProductID = ?', [ProductID], (err, row) => {
+  // Check if order exists
+  db.get('SELECT * FROM orders WHERE OrderID = ?', [OrderID], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+    if (!row) return res.status(404).json({ error: `Order with ID ${OrderID} not found` });
 
-    // Prepare SET clause and values
+    // Prepare SET clause and values, only for fields that are actually changing
     const setClause = [];
     const values = [];
 
-    // Only include fields that are actually changing
     keys.forEach(field => {
       if (row[field] !== fieldsToUpdate[field]) {
         setClause.push(`${field} = ?`);
@@ -551,15 +562,16 @@ app.put('/products/update', authenticateToken, (req, res) => {
       }
     });
 
+    // If nothing is changing
     if (setClause.length === 0) {
       return res.json({
         message: "No changes were made",
-        ProductID
+        OrderID
       });
     }
 
-    values.push(ProductID);
-    const sql = `UPDATE Products SET ${setClause.join(', ')} WHERE ProductID = ?`;
+    values.push(OrderID); // WHERE OrderID = ?
+    const sql = `UPDATE orders SET ${setClause.join(', ')} WHERE OrderID = ?`;
 
     db.run(sql, values, function(err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -573,35 +585,34 @@ app.put('/products/update', authenticateToken, (req, res) => {
       });
 
       res.json({
-        message: "Product updated successfully",
-        ProductID,
-        "Following fields are updated": updatedResponse,
+        message: "Order updated successfully and following properties have been updated",
+        updatedResponse,
         UpdatedBy: req.user.Email
       });
     });
   });
 });
 
-// =================== Delete Product (Protected) =================== //
-app.delete('/products/delete', authenticateToken, (req, res) => {
-  const { ProductID } = req.body;
+// =================== DELETE Order (Protected) =================== //
+app.delete('/orders/delete', authenticateToken, (req, res) => {
+  const { OrderID } = req.body;
 
-  if (!ProductID) {
-    return res.status(400).json({ error: "ProductID is required" });
+  if (!OrderID) {
+    return res.status(400).json({ error: "OrderID is required" });
   }
 
   const deletedBy = req.user.Email; // who is deleting
 
-  db.run('DELETE FROM Products WHERE ProductID = ?', [ProductID], function(err) {
+  db.run('DELETE FROM orders WHERE OrderID = ?', [OrderID], function(err) {
     if (err) return res.status(500).json({ error: err.message });
 
     if (this.changes === 0) {
-      return res.status(404).json({ error: `Product with ID ${ProductID} not found` });
+      return res.status(404).json({ error: `Order with ID ${OrderID} not found` });
     }
 
     res.json({
-      message: "Product deleted successfully",
-      ProductID: ProductID,
+      message: "Order deleted successfully",
+      OrderID: OrderID,
       DeletedBy: deletedBy
     });
   });
