@@ -440,6 +440,46 @@ app.post('/accesstoken', (req, res) => {
   );
 });
 
+// =================== Delete Access Token =================== //
+app.delete('/accesstoken', (req, res) => {
+  const { Email } = req.body;
+
+  // Validate input
+  if (!Email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  // Check if email exists
+  db.get(
+    'SELECT * FROM Users WHERE Email = ?',
+    [Email],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (!row) {
+        return res.status(404).json({
+          error: "Email does not exist"
+        });
+      }
+
+      // Delete access token (set it to NULL or empty)
+      db.run(
+        'UPDATE Users SET AccessToken = NULL WHERE Email = ?',
+        [Email],
+        function (err) {
+          if (err) return res.status(500).json({ error: err.message });
+
+          res.status(200).json({
+            message: "Access token deleted successfully",
+            Email: Email
+          });
+        }
+      );
+    }
+  );
+});
+
+
 
 // =================== Add Products (Protected) =================== //
 app.post('/products/add', authenticateToken, (req, res) => {
