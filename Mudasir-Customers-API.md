@@ -20,7 +20,8 @@ Base URL = https://customers-ecom-api.onrender.com
 
 
 ## Customers
-Add Customer<br>
+**Add Customer<br>**
+
 **`/customers/add`**
 
 **Method:** POST  
@@ -56,7 +57,8 @@ Example response:
     "CustomerID": 92
 }
 ```
-Get all Customers<br>
+**Get all Customers<br>**
+
 **`/customers`**
 
 **Method:** GET  
@@ -104,8 +106,10 @@ Example response:
     }
 ]
 ```
-Get Single Customer or multiple Customers using Querry Parameters.<br>
-**`/customers?CustomerID`**
+**Get Single Customer or multiple Customers using Querry Parameters:<br>**
+
+**`/customers?CustomerID`** <br>
+<br>
 **Status codes**
 
 | Status code | Description |
@@ -115,7 +119,8 @@ Get Single Customer or multiple Customers using Querry Parameters.<br>
 
 Note: Enter wrong CustomerID suppose 93. You will get message "Customer not found".
 
-Update Customers<br>
+**Update Customers<br>**
+
 **`/customers/update`**
 
 **Method:** PUT  
@@ -153,7 +158,8 @@ Example response:
 ```
 Note: In above example on these properties were updated. So only those properties will be shown which were updated.
 
-Delete Customers<br>
+**Delete Customers<br>**
+
 **`/customers/delete`**
 
 **Method:** Delete  
@@ -205,8 +211,8 @@ The request body needs to be in JSON format.
 
 | Name          | Type   | In   | Required | Description                            |
 | ------------- | ------ | ---- | -------- | -------------------------------------- |
-| `clientName`  | string | body | Yes      | The name of the API client.            |
-| `clientEmail` | string | body | Yes      | The email address of the API client. * |
+| `Name`  | string | body | Yes      | The name of the API client.            |
+| `Email` | string | body | Yes      | The email address of the API client. * |
 
 
 * The email address DOES NOT need to be real. The email will not be stored on the server.
