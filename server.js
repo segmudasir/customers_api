@@ -249,13 +249,13 @@ app.put('/products/update', (req, res) => {
     // Prepare only fields that are actually changing
     const setClause = [];
     const values = [];
-    const updatedResponse = {};
+    const updatedFields = {};
 
     keys.forEach(field => {
       if (row[field] !== fieldsToUpdate[field]) {
         setClause.push(`${field} = ?`);
         values.push(fieldsToUpdate[field]);
-        updatedResponse[field] = fieldsToUpdate[field];
+        updatedFields[field] = fieldsToUpdate[field];
       }
     });
 
@@ -272,13 +272,13 @@ app.put('/products/update', (req, res) => {
     db.run(sql, values, function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      res.json({
-        message: "Product updated successfully and following properties were updated",
-        updatedResponse
-      });
+      // Build final response: merge message + updated fields at top level
+      const response = { message: "Product updated successfully and following properties were updated", ...updatedFields };
+      res.json(response);
     });
   });
 });
+
 
 // =================== Delete Product =================== //
 app.delete('/products/delete', (req, res) => {
@@ -420,44 +420,27 @@ app.post('/accesstoken', (req, res) => {
   );
 });
 
-// =================== Delete Access Token =================== //
+// =================== Delete Access Token (Delete User Row) =================== //
 app.delete('/deletetoken', (req, res) => {
   const { Email } = req.body;
 
-  // Validate input
   if (!Email) {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  // Check if email exists
-  db.get(
-    'SELECT * FROM Users WHERE Email = ?',
-    [Email],
-    (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
+  db.run('DELETE FROM Users WHERE Email = ?', [Email], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
 
-      if (!row) {
-        return res.status(404).json({
-          error: "Email does not exist"
-        });
-      }
-
-      // Delete access token (set it to NULL or empty)
-      db.run(
-        'UPDATE Users SET AccessToken = NULL WHERE Email = ?',
-        [Email],
-        function (err) {
-          if (err) return res.status(500).json({ error: err.message });
-
-          res.status(200).json({
-            message: "Access token deleted successfully",
-            Email: Email
-          });
-        }
-      );
+    if (this.changes === 0) {
+      return res.status(404).json({ error: "Email does not exist" });
     }
-  );
+
+    res.json({
+      message: `User has been deleted successfully`
+    });
+  });
 });
+
 
 
 // =================== Add Order (Protected) =================== //
@@ -492,8 +475,7 @@ app.post('/orders/add', authenticateToken, (req, res) => {
       res.status(201).json({
         Message: "Order added successfully",
         OrderID: newOrderID,
-        TotalAmount,
-        AddedBy: req.user.Email // optional audit info from token
+        TotalAmount
       });
     });
   });
@@ -519,17 +501,21 @@ app.get('/orders', authenticateToken, (req, res) => {
   db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    if ((req.query.OrderID || req.query.CustomerName) && rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: `Order not found` });
     }
 
-    // Optional: include which user requested
-    res.json({
-      RequestedBy: req.user.Email,
-      Orders: rows
-    });
+    // If only one order requested by ID, return object instead of array
+    if (req.query.OrderID && rows.length === 1) {
+      return res.json(rows[0]);
+    }
+
+    // Otherwise return array of orders
+    res.json(rows);
   });
 });
+
+
 
 // =================== Update Order (Protected) =================== //
 app.put('/orders/update', authenticateToken, (req, res) => {
@@ -554,11 +540,13 @@ app.put('/orders/update', authenticateToken, (req, res) => {
     // Prepare SET clause and values, only for fields that are actually changing
     const setClause = [];
     const values = [];
+    const updatedFields = {}; // to keep only fields that actually changed
 
     keys.forEach(field => {
       if (row[field] !== fieldsToUpdate[field]) {
         setClause.push(`${field} = ?`);
         values.push(fieldsToUpdate[field]);
+        updatedFields[field] = fieldsToUpdate[field]; // track for response
       }
     });
 
@@ -566,7 +554,6 @@ app.put('/orders/update', authenticateToken, (req, res) => {
     if (setClause.length === 0) {
       return res.json({
         message: "No changes were made",
-        OrderID
       });
     }
 
@@ -576,22 +563,14 @@ app.put('/orders/update', authenticateToken, (req, res) => {
     db.run(sql, values, function(err) {
       if (err) return res.status(500).json({ error: err.message });
 
-      // Build response object
-      const updatedResponse = {};
-      keys.forEach(field => {
-        if (row[field] !== fieldsToUpdate[field]) {
-          updatedResponse[field] = fieldsToUpdate[field];
-        }
-      });
-
       res.json({
         message: "Order updated successfully and following properties have been updated",
-        updatedResponse,
-        UpdatedBy: req.user.Email
+        ...updatedFields // spread updated fields at top level
       });
     });
   });
 });
+
 
 // =================== DELETE Order (Protected) =================== //
 app.delete('/orders/delete', authenticateToken, (req, res) => {
@@ -611,9 +590,7 @@ app.delete('/orders/delete', authenticateToken, (req, res) => {
     }
 
     res.json({
-      message: "Order deleted successfully",
-      OrderID: OrderID,
-      DeletedBy: deletedBy
+      message: "Order deleted successfully", 
     });
   });
 });

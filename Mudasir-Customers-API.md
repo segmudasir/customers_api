@@ -1,17 +1,26 @@
 # Mudasir Customers API
 
-This API allows you to get Orders, Products, Customers.
+This API has two tables Customers, Orders.<br> 
+
+User can add Customers, Get Customers, Update Customer and Delete Customers. (CRUD) Operations.<br> 
+
+User can Create Orders, Get Orders, Update Orders and Delete Orders. (CRUD) Operations.<br> 
+
+But Orders endpoint requires User Authentication. <br>
+
+User need to get Access token first by Name and Email Address, this will give you access token.<br><br>
 
 Base URL = https://customers-ecom-api.onrender.com
 
 ## Endpoints
 
-- [Customers](#Customers)
-- [Products](#Products)
+- [Customers](#customers)
+- [API Authentication](#api-authentication)
+- [Orders](#orders)
 
 
 ## Customers
-
+Add Customer<br>
 **`/customers/add`**
 
 **Method:** POST  
@@ -47,6 +56,7 @@ Example response:
     "CustomerID": 92
 }
 ```
+Get all Customers<br>
 **`/customers`**
 
 **Method:** GET  
@@ -67,7 +77,6 @@ Also called Retrieve Request - Returns the list of all Customers from Server.
 | Status code | Description |
 |-----------------|-----------------------------------------------------|
 | 200 OK          | Indicates a successful response.                    |
-| 404 Not Found   | If specific ID or CustomerName or Country or City does not exists you will get this error. |
 
 Example response:
 
@@ -95,60 +104,128 @@ Example response:
     }
 ]
 ```
-
-## Products
-
-### Get Products
-
-**`/products`**
-
-Method: GET
-Returns a list of Products.
-
-
-This endpoint uses pagination to handle the returned results. Paginating the results ensures responses are easier to handle. Each response will indicate the total number of results, the current page, and the total number of pages.
-
-**Parameters**
-
-| Name        | Type    | In    | Required | Description                                                                                                | 
-| ----------- | ------- | ----- | -------- | -----------------------------------------------------------------------------------------------------------| 
-| `list`      | string  | query | Yes      | Specifies the list you want to retrieve. Must be one of: favourite-books, non-fiction, wishlist, fiction.  | 
-| `page`      | integer | query | No       | Specifies the page you wish to retrive from the entire result set.                                         | 
-
+Get Single Customer or multiple Customers using Querry Parameters.<br>
+**`/customers?CustomerID`**
 **Status codes**
 
 | Status code | Description |
 |-----------------|-----------------------------------------------------|
 | 200 OK          | Indicates a successful response.                    |
-| 400 Bad Request | Indicates that the parameters provided are invalid. |
+| 404 Not Found   | If specific ID or CustomerName or Country or City does not exists you will get this error. |
+
+Note: Enter wrong CustomerID suppose 93. You will get message "Customer not found".
+
+Update Customers<br>
+**`/customers/update`**
+
+**Method:** PUT  
+Also called Update Request - In this method something or some property is updated on the Server. Therefore we require parameters that need to be changed.
+
+Example Body:
+```
+{
+  "CustomerID": 92,
+  "Age": 34,
+  "City": "Warsaw",
+  "PostalCode": "31-127",
+  "Country": "Poland"
+}
+```
+
+**Status codes**
+
+| Status code | Description |
+|-----------------|-----------------------------------------------------|
+| 200 OK          | Indicates that request has been submitted successfully.                    |
+| 404 Not found  | If CustomerID does not exists you will get this error. |
+
 
 Example response:
 
 ```
 {
-    "status": "OK",
-    "num_results": 17,
-    "page": 1,
-    "total_pages": 4,
-    "results": [
-        {
-            "title": "Crush It!: Why NOW Is the Time to Cash In on Your Passion",
-            "category": [
-                "non-fiction"
-            ],
-            "type": "audio",
-            "author": "Gary Vaynerchuk",
-            "release_year": 2010,
-            "rating": "7"
-        },
-        ...
-    ]
-]
+    "message": "Following properties of customer updated successfully",
+    "Age": 34,
+    "City": "Warsaw",
+    "PostalCode": "31-127",
+    "Country": "Poland"
+}
+```
+Note: In above example on these properties were updated. So only those properties will be shown which were updated.
+
+Delete Customers<br>
+**`/customers/delete`**
+
+**Method:** Delete  
+Also called Delete Request - In this method records are deleted from the the Server. We need Body and CustomerID to be sent in the body as JSON format.
+
+Example Body:
+```
+{
+  "CustomerID": 92
+}
 ```
 
+**Status codes**
+
+| Status code | Description |
+|-----------------|-----------------------------------------------------|
+| 200 OK          | Indicates that record has been deleted successfully.                    |
+| 404 Not found  | If CustomerID does not exists you will get this error. |
+
+
+Example response:
+
+```
+{
+    "message": "Customer deleted successfully",
+    "CustomerID": 92
+}
+```
 
 ## API Authentication
 
-Some endpoints require authentication. 
+Some endpoints may require authentication. To submit or view an order, you need to register your API client and obtain an access token.
 
-The endpoints that require authentication expect the API key to be provided as a query parameter named `api-key`.
+The endpoints that require authentication expect a bearer token sent in the Authorization header.
+
+Example:
+
+Authorization: Bearer YOUR TOKEN
+
+### Register a new API client
+
+**`/users`**
+
+**Method:** POST  
+
+**Parameters**
+
+The request body needs to be in JSON format.
+
+| Name          | Type   | In   | Required | Description                            |
+| ------------- | ------ | ---- | -------- | -------------------------------------- |
+| `clientName`  | string | body | Yes      | The name of the API client.            |
+| `clientEmail` | string | body | Yes      | The email address of the API client. * |
+
+
+* The email address DOES NOT need to be real. The email will not be stored on the server.
+
+**Status codes**
+
+| Status code     | Description                                                                       |
+|-----------------|-----------------------------------------------------------------------------------|
+| 201 Created     | Indicates that the client has been registered successfully.                       |
+| 400 Bad Request | Indicates that the parameters provided are invalid.                               |
+| 409 Conflict    | Indicates that an API client has already been registered with this email address. |
+
+Example request body:
+
+```
+{
+   "Name": "Postman",
+   "Email": "maddy@example.com"
+}
+```
+
+The response body will contain the access token.
