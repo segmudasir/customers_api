@@ -602,8 +602,6 @@ app.delete('/orders/delete', authenticateToken, (req, res) => {
     return res.status(400).json({ error: "OrderID is required" });
   }
 
-  const deletedBy = req.user.Email; // who is deleting
-
   db.run('DELETE FROM orders WHERE OrderID = ?', [OrderID], function(err) {
     if (err) return res.status(500).json({ error: err.message });
 
@@ -612,7 +610,7 @@ app.delete('/orders/delete', authenticateToken, (req, res) => {
     }
 
     res.json({
-      message: "Order deleted successfully", 
+      message: `Order with ID ${OrderID} has been deleted successfully` 
     });
   });
 });
