@@ -347,7 +347,7 @@ Returns a single order (using Querry Parameters).
 | Name            | Type    | In     | Required | Description                         |
 | --------------- | ------- | ------ | -------- | ----------------------------------- |
 | `Authorization` | string  | header | Yes      | The bearer token of the API client. |
-| `OrderID`       | Number  | path   | Yes      | The order id.                       |
+| `OrderID`       | Number  | Querry   | Yes      | The order id.                       |
 
 **Status codes**
 
@@ -384,7 +384,7 @@ The request body needs to be in JSON format.
 | Name            | Type   | In     | Required | Description                          |
 | --------------- | ------ | ------ | -------- | ------------------------------------ |
 | `Authorization` | string | header | Yes      | The bearer token of the API client.  |
-| `OrderID`       | string | path   | Yes      | The order id.                        |
+| `OrderID`       | string | body   | Yes      | The order id.                        |
 | `CustomerName`  | string | body   | No       | The name of the customer.            |
 | `Product`  | string | body   | No      | The name of the product.            |
 | `Price`       | Number (float) | body   | No       | Price of the product e.g., 19.99. |
