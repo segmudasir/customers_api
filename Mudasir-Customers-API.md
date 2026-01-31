@@ -254,7 +254,7 @@ The request body needs to be in JSON format.
 | `Product`  | string | body   | Yes      | The name of the product.            |
 | `Price`       | Number (float) | body   | Yes       | Price of the product e.g., 19.99. |
 | `Quantity`       | Number | body   | Yes       | Quantity of the product. |
-| OrderDate     | string (date-time) | body | Yes       | Order date in "2/12/2025" format. |
+| `OrderDate`       | string (date-time) | body   | Yes       | Order date in "2/12/2025" format. |
 
 Note: All the parameters are mandatory.
 
