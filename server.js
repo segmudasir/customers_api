@@ -447,9 +447,25 @@ app.delete('/deletetoken', (req, res) => {
 app.post('/orders/add', authenticateToken, (req, res) => {
   const { CustomerName, Product, Price, Quantity, OrderDate } = req.body;
 
-  // Validate required fields
-  if (!CustomerName || !Product || Price == null || Quantity == null || !OrderDate) {
-    return res.status(400).json({ error: "All fields are required except OrderID and TotalAmount" });
+  // Field-by-field validation
+  if (!CustomerName) {
+    return res.status(400).json({ error: "CustomerName is mandatory" });
+  }
+
+  if (!Product) {
+    return res.status(400).json({ error: "Product is mandatory" });
+  }
+
+  if (Price === undefined || Price === null) {
+    return res.status(400).json({ error: "Price is mandatory" });
+  }
+
+  if (Quantity === undefined || Quantity === null) {
+    return res.status(400).json({ error: "Quantity is mandatory" });
+  }
+
+  if (!OrderDate) {
+    return res.status(400).json({ error: "OrderDate is mandatory" });
   }
 
   // Calculate TotalAmount
@@ -465,21 +481,27 @@ app.post('/orders/add', authenticateToken, (req, res) => {
     }
 
     const sql = `
-      INSERT INTO orders(OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount)
-      VALUES(?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO orders
+      (OrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.run(sql, [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount], function(err) {
-      if (err) return res.status(500).json({ error: err.message });
+    db.run(
+      sql,
+      [newOrderID, CustomerName, Product, Price, Quantity, OrderDate, TotalAmount],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
 
-      res.status(201).json({
-        Message: "Order added successfully",
-        OrderID: newOrderID,
-        TotalAmount
-      });
-    });
+        res.status(201).json({
+          message: "Order added successfully",
+          OrderID: newOrderID,
+          TotalAmount
+        });
+      }
+    );
   });
 });
+
 
 // =================== GET Orders (Protected) =================== //
 app.get('/orders', authenticateToken, (req, res) => {
